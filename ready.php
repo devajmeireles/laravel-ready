@@ -1,56 +1,121 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+if (!file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
+    echo 'Please, run composer install before run this script';
+
+    exit;
+}
+
+require $autoload;
 
 use GuzzleHttp\Client;
 use Symfony\Component\Process\Process;
-use function Laravel\Prompts\{info, multiselect};
+use function Laravel\Prompts\{confirm, info, multiselect, select, spin};
 
-$selecteds = multiselect('Select what you want to do', [
-    'prepareEnv' => 'Prepare .env with sqlite',
-    'prepareLivewire' => 'Install Livewire',
-    'prepareSeeder' => 'Prepare DatabaseSeeder',
-    'prepareProvider' => 'Prepare AppServiceProvider',
-    'prepareAlpine' => 'Remove AlpineJs',
-    'preparePint' => 'Install Laravel Pint',
-    'prepareLarastan' => 'Install LaraStan',
-    'prepareDebug' => 'Install Laravel Debugbar',
-    'prepareIde' => 'Install Laravel IDE Helper',
-    'prepareMigration' => 'Run migrations',
-], scroll: 20, required: true);
+/** Default Zone */
+const PACKAGES = [
+    'livewire/livewire:^3.0' => 'Livewire [3.x]',
+    'livewire/livewire:^2.0' => 'Livewire [2.x]',
+    'barryvdh/laravel-debugbar' => 'Laravel DebugBar',
+    'barryvdh/laravel-ide-helper' => 'Laravel IDE Helper',
+    'laravel/pint' => 'Laravel Pint',
+    'nunomaduro/larastan' => 'LaraStan',
+];
 
-function prepareEnv(): void //OK
+const STEPS = [
+    'readyEnvironment' => 'Preparing Environment...',
+    'readyLivewire' => 'Installing Livewire...',
+    'readySeeder' => 'Preparing DatabaseSeeder...',
+    'readyProvider' => 'Preparing AppServiceProvider...',
+    'readyAlpine' => 'Removing AlpineJs...',
+    'readyPint' => 'Installing Laravel Pint...',
+    'readyLarastan' => 'Installing LaraStan...',
+    'readyLaravelDebug' => 'Installing Laravel Debugbar...',
+    'readyIdeHelper' => 'Installing Laravel IDE Helper...',
+    'readyMigration' => 'Running migrations...',
+];
+
+$steps = [];
+$selectedPackages = [];
+$livewireVersion = null;
+$linkValet = false;
+$selfDestruction = false;
+/** end */
+
+$type = select('Start by selection what you want to do:', [
+    'packages' => 'Install Packages',
+    'project' => 'Prepare New Project'
+]);
+
+if ($type === 'packages') {
+    // TODO tratar isso!
+    $selectedPackages = multiselect(
+        'Select the packages:', PACKAGES,
+        scroll: 20,
+        required: true,
+        validate: function ($values) {
+            if (in_array('livewire/livewire:^3.0', $values) && in_array('livewire/livewire:^2.0', $values)) {
+                return 'You can\'t select both Livewire versions';
+            }
+
+            return null;
+        }
+    );
+} else {
+    $steps = multiselect('Select what you want to do:', [
+        'readyEnvironment'  => 'Prepare .env with sqlite',
+        'readyLivewire'     => 'Install Livewire',
+        'readySeeder'       => 'Prepare DatabaseSeeder',
+        'readyProvider'     => 'Prepare AppServiceProvider',
+        'readyAlpine'       => 'Remove AlpineJs',
+        'readyPint'         => 'Install Laravel Pint',
+        'readyLarastan'     => 'Install LaraStan',
+        'readyLaravelDebug' => 'Install Laravel Debugbar',
+        'readyIdeHelper'    => 'Install Laravel IDE Helper',
+        'readyMigration'    => 'Run migrations',
+    ], scroll: 20, required: true);
+
+    if (in_array('readyLivewire', $steps)) {
+        //TODO: a versão do livewire vai demandar a remoção do alpine ou não
+        $livewireVersion = select('Select Livewire version', [
+            'livewire/livewire:^3.0' => 'Livewire [3.x]',
+            'livewire/livewire:^2.0' => 'Livewire [2.x]',
+        ]);
+    }
+
+    $linkValet = confirm('Do you want to generate a Valet link?');
+    $selfDestruction = confirm('Do you want to remove this file after run?');
+}
+
+function readyEnvironment(): void
 {
     $content = file_get_contents('.env');
     $folder = str(__DIR__)->afterLast('/')->value();
-
     $content = str_replace('DB_CONNECTION=mysql', 'DB_CONNECTION=sqlite', $content);
     $content = str_replace("DB_DATABASE=$folder", 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
 
     file_put_contents('.env', $content);
 }
 
-function prepareLivewire(): void // +/-
+function readyLivewire(): bool
 {
+    global $livewireVersion;
+
     try {
-        Process::fromShellCommandline('composer require livewire/livewire')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
+        return runCommand("composer require $livewireVersion");
     } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
         //
     }
+
+    return false;
 }
 
-function prepareSeeder(): void //OK
+function readySeeder(): void //OK
 {
     $file = file_get_contents('database/seeders/DatabaseSeeder.php');
     $lines = explode("\n", $file);
 
     foreach ($lines as $key => $line) {
-        //TODO: refactor aqui
-
         if (empty($line)) continue;
 
         if (!str_contains($line, '//')) continue;
@@ -65,7 +130,7 @@ function prepareSeeder(): void //OK
     file_put_contents('database/seeders/DatabaseSeeder.php', implode("\n", $lines));
 }
 
-function prepareProvider(): void // OK
+function readyProvider(): void // OK
 {
     $file = file_get_contents('app/Providers/AppServiceProvider.php');
     $lines = explode("\n", $file);
@@ -81,80 +146,79 @@ function prepareProvider(): void // OK
     file_put_contents('app/Providers/AppServiceProvider.php', implode("\n", $lines));
 }
 
-function prepareAlpine(): void // OK
+function readyAlpine(): bool
 {
+    global $livewireVersion;
+
+    if ($livewireVersion === 'livewire/livewire:^2.0') return true;
+
     try {
-        Process::fromShellCommandline('npm remove alpinejs')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
-    } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
+        $status = runCommand("npm remove alpinejs");
+
+        if (!$status) {
+            return false;
+        }
+
+        $file = file_get_contents('resources/js/app.js');
+        $lines = explode("\n", $file);
+
+        foreach ($lines as $key => $line) {
+            $line = strtolower($line);
+
+            if (!str_contains($line, 'alpine')) continue;
+
+            unset($lines[$key]);
+        }
+
+        $lines = array_filter($lines);
+
+        file_put_contents('resources/js/app.js', implode("\n", $lines));
+
+        return runCommand("npm run build");
+    } catch (Exception) {
         //
     }
 
-    $file = file_get_contents('resources/js/app.js');
-    $lines = explode("\n", $file);
-
-    foreach ($lines as $key => $line) {
-        $line = strtolower($line);
-
-        if (!str_contains($line, 'alpine')) continue;
-
-        unset($lines[$key]);
-    }
-
-    $lines = array_filter($lines);
-
-    file_put_contents('resources/js/app.js', implode("\n", $lines));
-
-    try {
-        Process::fromShellCommandline('npm run build')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
-    } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
-        //
-    }
+    return false;
 }
 
-function preparePint(): void // OK
+function readyPint(): bool
 {
     try {
-        Process::fromShellCommandline('composer require laravel/pint --dev')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
-    } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
+        $status = runCommand("composer require laravel/pint --dev");
+
+        if (!$status) {
+            return false;
+        }
+
+        file_put_contents('pint.json', '');
+
+        $content = (new Client())->get('https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json');
+
+        file_put_contents('pint.json', $content->getBody()->getContents());
+
+        $composer = json_decode(file_get_contents('composer.json'));
+        $composer->scripts->format = './vendor/bin/pint';
+        file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+
+        return true;
+    } catch (Exception) {
         //
     }
 
-    file_put_contents('pint.json', '');
-
-    $content = (new Client())->get('https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json');
-
-    file_put_contents('pint.json', $content->getBody()->getContents());
-
-    $composer = json_decode(file_get_contents('composer.json'));
-    $composer->scripts->format = './vendor/bin/pint';
-    file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    return false;
 }
 
-function prepareLarastan(): void
+function readyLarastan(): bool
 {
     try {
-        Process::fromShellCommandline('composer require nunomaduro/larastan:^2.0 --dev')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
-    } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
-        //
-    }
+        $status = runCommand("composer require nunomaduro/larastan:^2.0 --dev");
 
-    $content = <<<FILE
+        if (!$status) {
+            return false;
+        }
+
+        $content = <<<FILE
 includes:
     - ./vendor/nunomaduro/larastan/extension.neon
 
@@ -175,65 +239,59 @@ parameters:
 #    checkMissingIterableValueType: false
 FILE;
 
-    file_put_contents('phpstan.neon', $content);
+        file_put_contents('phpstan.neon', $content);
 
-    $composer = json_decode(file_get_contents('composer.json'));
-    $composer->scripts->analyse = './vendor/bin/phpstan analyse --memory-limit=2G';
-    file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        $composer = json_decode(file_get_contents('composer.json'));
+        $composer->scripts->analyse = './vendor/bin/phpstan analyse --memory-limit=2G';
+        file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } catch (Exception) {
+        //
+    }
+
+    return false;
 }
 
-function prepareDebug(): void // OK
+function readyLaravelDebug(): bool
+{
+    return runCommand("composer require barryvdh/laravel-debugbar --dev");
+}
+
+function readyIdeHelper(): bool
+{
+    return runCommand("composer require --dev barryvdh/laravel-ide-helper");
+}
+
+function readyMigration(): bool
+{
+    return runCommand("php artisan migrate:fresh --seed");
+}
+
+function runCommand(string $command): bool
 {
     try {
-        Process::fromShellCommandline('composer require barryvdh/laravel-debugbar --dev')
-            ->setTty(true)
+        Process::fromShellCommandline("$command")
+            ->setTty(false)
             ->setTimeout(null)
             ->run();
+
+        return true;
     } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
-        //
+        return false;
     }
 }
 
-function prepareIde(): void // OK
-{
-    try {
-        Process::fromShellCommandline('composer require --dev barryvdh/laravel-ide-helper')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
-    } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
-        //
-    }
-}
+foreach ($steps as $step) {
+    spin(function () use ($step) {
+        try {
+            if ($step() === false) {
+                throw new Exception('Ops!');
+            }
+        } catch (Exception) {
+            echo "$step failed!";
+        }
 
-function prepareMigration(): void // OK
-{
-    try {
-        Process::fromShellCommandline('php artisan migrate:fresh --seed')
-            ->setTty(true)
-            ->setTimeout(null)
-            ->run();
-    } catch (Exception $e) {
-        //TODO: possivelmente marcar cada etapa como erro/sucesso
-        //
-    }
+        return true;
+    }, STEPS[$step]);
 }
-
-foreach ($selecteds as $selected) {
-    $selected();
-}
-
-//prepareEnv();
-//prepareLivewire();
-//prepareSeeder();
-//prepareProvider();
-//prepareAlpine();
-//preparePint();
-//prepareLarastan();
-//prepareDebug();
-//prepareIde();
-//prepareMigration();
 
 info('Done!');
