@@ -71,6 +71,8 @@ if ($type === 'packages') {
         $livewireVersion = $livewireSelector();
     }
 
+    //TODO: ao selecionar o Livewire.. chamar a instalação do Alpine pra ver o que tem que fazer
+
     $steps = $selectedPackages;
 } else {
     /** Full New Project */
