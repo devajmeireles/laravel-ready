@@ -333,10 +333,9 @@ function readyRemoveComments(): bool
     );
 
     foreach ($files as $file) {
-        $content        = file_get_contents($file);
-        $cleanedContent = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', $content);
+        $content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
 
-        file_put_contents($file, $cleanedContent);
+        file_put_contents($file, $content);
     }
 
     return true;
