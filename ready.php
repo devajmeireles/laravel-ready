@@ -67,11 +67,11 @@ if ($type === 'packages') {
 
     $selectedPackages = multiselect('Select the packages:', $packages, scroll: 20, required: true);
 
-    if (in_array('readyLivewire', array_keys($packages))) {
+    if (in_array('readyLivewire', array_keys($selectedPackages))) {
         $livewireVersion = $livewireSelector();
     }
 
-    $steps = $packages;
+    $steps = $selectedPackages;
 } else {
     /** Full New Project */
     $steps = multiselect('Select what you want to do:', OPTIONS, scroll: 20, required: true);
