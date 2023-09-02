@@ -13,33 +13,43 @@ use Symfony\Component\Process\Process;
 use function Laravel\Prompts\{confirm, info, multiselect, select, spin};
 
 /** Default Zone */
-const PACKAGES = [
-    'livewire/livewire:^3.0' => 'Livewire [3.x]',
-    'livewire/livewire:^2.0' => 'Livewire [2.x]',
-    'barryvdh/laravel-debugbar' => 'Laravel DebugBar',
-    'barryvdh/laravel-ide-helper' => 'Laravel IDE Helper',
-    'laravel/pint' => 'Laravel Pint',
-    'nunomaduro/larastan' => 'LaraStan',
+const OPTIONS = [
+    'readyEnvironment'  => 'Prepare .env with sqlite',
+    'readyLivewire'     => '[Package] Install Livewire',
+    'readySeeder'       => 'Prepare DatabaseSeeder',
+    'readyProvider'     => 'Prepare AppServiceProvider',
+    'readyAlpine'       => 'Remove AlpineJs',
+    'readyPint'         => 'Install Laravel Pint',
+    'readyLarastan'     => '[Package] Install LaraStan',
+    'readyLaravelDebug' => '[Package] Install Laravel Debugbar',
+    'readyIdeHelper'    => '[Package] Install Laravel IDE Helper',
+    'readyMigration'    => 'Run migrations',
 ];
 
 const STEPS = [
-    'readyEnvironment' => 'Preparing Environment...',
-    'readyLivewire' => 'Installing Livewire...',
-    'readySeeder' => 'Preparing DatabaseSeeder...',
-    'readyProvider' => 'Preparing AppServiceProvider...',
-    'readyAlpine' => 'Removing AlpineJs...',
-    'readyPint' => 'Installing Laravel Pint...',
-    'readyLarastan' => 'Installing LaraStan...',
+    'readyEnvironment'  => 'Preparing Environment...',
+    'readyLivewire'     => 'Installing Livewire...',
+    'readySeeder'       => 'Preparing DatabaseSeeder...',
+    'readyProvider'     => 'Preparing AppServiceProvider...',
+    'readyAlpine'       => 'Removing AlpineJs...',
+    'readyPint'         => 'Installing Laravel Pint...',
+    'readyLarastan'     => 'Installing LaraStan...',
     'readyLaravelDebug' => 'Installing Laravel Debugbar...',
-    'readyIdeHelper' => 'Installing Laravel IDE Helper...',
-    'readyMigration' => 'Running migrations...',
+    'readyIdeHelper'    => 'Installing Laravel IDE Helper...',
+    'readyMigration'    => 'Running migrations...',
 ];
 
-$steps = [];
+$steps            = [];
 $selectedPackages = [];
-$livewireVersion = null;
-$linkValet = false;
-$selfDestruction = false;
+$linkValet        = false;
+$livewireVersion  = null;
+$selfDestruction  = false;
+$livewireSelector = function () {
+    return select('Select Livewire version', [
+        'livewire/livewire:^3.0' => 'Livewire [3.x]',
+        'livewire/livewire:^2.0' => 'Livewire [2.x]',
+    ]);
+};
 /** end */
 
 $type = select('Start by selection what you want to do:', [
@@ -48,39 +58,25 @@ $type = select('Start by selection what you want to do:', [
 ]);
 
 if ($type === 'packages') {
-    // TODO tratar isso!
-    $selectedPackages = multiselect(
-        'Select the packages:', PACKAGES,
-        scroll: 20,
-        required: true,
-        validate: function ($values) {
-            if (in_array('livewire/livewire:^3.0', $values) && in_array('livewire/livewire:^2.0', $values)) {
-                return 'You can\'t select both Livewire versions';
-            }
+    $packages = collect(OPTIONS)
+        ->filter(fn ($key) => str_contains($key, '[Package]'))
+        ->mapWithKeys(fn ($value, $key) => [$key => str_replace('[Package] ', '', $value)])
+        ->toArray();
 
-            return null;
-        }
-    );
+    $selectedPackages = multiselect('Select the packages:', $packages, scroll: 20, required: true);
+
+    if (in_array('readyLivewire', array_keys($packages))) {
+        $livewireVersion = $livewireSelector();
+    }
+
+    $steps = $packages;
+
+    dd($steps, $livewireVersion);
 } else {
-    $steps = multiselect('Select what you want to do:', [
-        'readyEnvironment'  => 'Prepare .env with sqlite',
-        'readyLivewire'     => 'Install Livewire',
-        'readySeeder'       => 'Prepare DatabaseSeeder',
-        'readyProvider'     => 'Prepare AppServiceProvider',
-        'readyAlpine'       => 'Remove AlpineJs',
-        'readyPint'         => 'Install Laravel Pint',
-        'readyLarastan'     => 'Install LaraStan',
-        'readyLaravelDebug' => 'Install Laravel Debugbar',
-        'readyIdeHelper'    => 'Install Laravel IDE Helper',
-        'readyMigration'    => 'Run migrations',
-    ], scroll: 20, required: true);
+    $steps = multiselect('Select what you want to do:', OPTIONS, scroll: 20, required: true);
 
     if (in_array('readyLivewire', $steps)) {
-        //TODO: a versão do livewire vai demandar a remoção do alpine ou não
-        $livewireVersion = select('Select Livewire version', [
-            'livewire/livewire:^3.0' => 'Livewire [3.x]',
-            'livewire/livewire:^2.0' => 'Livewire [2.x]',
-        ]);
+        $livewireVersion = $livewireSelector();
     }
 
     $linkValet = confirm('Do you want to generate a Valet link?');
