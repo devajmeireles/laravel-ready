@@ -28,17 +28,18 @@ const OPTIONS = [
 ];
 
 const STEPS = [
-    'readyEnvironment'  => 'Preparing Environment...',
-    'readyLivewire'     => 'Installing Livewire...',
-    'readySeeder'       => 'Preparing DatabaseSeeder...',
-    'readyProvider'     => 'Preparing AppServiceProvider...',
-    'readyAlpine'       => 'Removing AlpineJs...',
-    'readyPint'         => 'Installing Laravel Pint...',
-    'readyLarastan'     => 'Installing LaraStan...',
-    'readyLaravelDebug' => 'Installing Laravel Debugbar...',
-    'readyIdeHelper'    => 'Installing Laravel IDE Helper...',
-    'readyMigration'    => 'Running Migrations...',
-    'readyValetLink'    => 'Preparing Valet...',
+    'readyEnvironment'    => 'Preparing Environment...',
+    'readyLivewire'       => 'Installing Livewire...',
+    'readySeeder'         => 'Preparing DatabaseSeeder...',
+    'readyProvider'       => 'Preparing AppServiceProvider...',
+    'readyAlpine'         => 'Removing AlpineJs...',
+    'readyPint'           => 'Installing Laravel Pint...',
+    'readyLarastan'       => 'Installing LaraStan...',
+    'readyLaravelDebug'   => 'Installing Laravel Debugbar...',
+    'readyIdeHelper'      => 'Installing Laravel IDE Helper...',
+    'readyMigration'      => 'Running Migrations...',
+    'readyValetLink'      => 'Preparing Valet...',
+    'readyRemoveComments' => 'Removing Unnecessary Comments...',
 ];
 
 $steps            = [];
