@@ -10,7 +10,7 @@ require $autoload;
 
 use GuzzleHttp\Client;
 use Symfony\Component\Process\Process;
-use function Laravel\Prompts\{confirm, info, multiselect, select, spin};
+use function Laravel\Prompts\{confirm, info, multiselect, select, spin, text};
 
 /** Default Zone */
 const OPTIONS = [
@@ -19,9 +19,9 @@ const OPTIONS = [
     'readySeeder'       => 'Prepare DatabaseSeeder',
     'readyProvider'     => 'Prepare AppServiceProvider',
     'readyAlpine'       => 'Remove AlpineJs',
-    'readyPint'         => 'Install Laravel Pint',
+    'readyPint'         => '[Package] Install Laravel Pint',
     'readyLarastan'     => '[Package] Install LaraStan',
-    'readyLaravelDebug' => '[Package] Install Laravel Debugbar',
+    'readyLaravelDebug' => '[Package] Install Laravel DebugBar',
     'readyIdeHelper'    => '[Package] Install Laravel IDE Helper',
     'readyMigration'    => 'Run migrations',
 ];
@@ -41,9 +41,8 @@ const STEPS = [
 
 $steps            = [];
 $selectedPackages = [];
-$linkValet        = false;
+$linkValet        = null;
 $livewireVersion  = null;
-$selfDestruction  = false;
 $livewireSelector = function () {
     return select('Select Livewire version', [
         'livewire/livewire:^3.0' => 'Livewire [3.x]',
@@ -58,6 +57,7 @@ $type = select('Start by selection what you want to do:', [
 ]);
 
 if ($type === 'packages') {
+    /** Packages Only */
     $packages = collect(OPTIONS)
         ->filter(fn ($key) => str_contains($key, '[Package]'))
         ->mapWithKeys(fn ($value, $key) => [$key => str_replace('[Package] ', '', $value)])
@@ -70,17 +70,32 @@ if ($type === 'packages') {
     }
 
     $steps = $packages;
-
-    dd($steps, $livewireVersion);
 } else {
+    /** Full New Project */
     $steps = multiselect('Select what you want to do:', OPTIONS, scroll: 20, required: true);
 
     if (in_array('readyLivewire', $steps)) {
         $livewireVersion = $livewireSelector();
     }
 
-    $linkValet = confirm('Do you want to generate a Valet link?');
-    $selfDestruction = confirm('Do you want to remove this file after run?');
+    if (confirm('Do you want to generate a Valet link?')) {
+        $linkValet = text(
+            'Enter the link name',
+            required: true,
+            validate: function ($value) {
+                if (str_contains($value, ' ')) {
+                    return 'The link name cannot contain spaces';
+                }
+
+                if (str_contains($value, '.test')) {
+                    return 'The link name cannot contain .test';
+                }
+
+                return null;
+            },
+            hint: 'Use . to current folder'
+        );
+    }
 }
 
 function readyEnvironment(): void
@@ -290,4 +305,12 @@ foreach ($steps as $step) {
     }, STEPS[$step]);
 }
 
-info('Done!');
+if ($linkValet) {
+    runCommand("valet link $linkValet");
+}
+
+info('Your project is ready to be used! 🚀');
+
+sleep(3);
+
+unlink(__FILE__);
