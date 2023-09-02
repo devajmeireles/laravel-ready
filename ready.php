@@ -36,7 +36,8 @@ const STEPS = [
     'readyLarastan'     => 'Installing LaraStan...',
     'readyLaravelDebug' => 'Installing Laravel Debugbar...',
     'readyIdeHelper'    => 'Installing Laravel IDE Helper...',
-    'readyMigration'    => 'Running migrations...',
+    'readyMigration'    => 'Running Migrations...',
+    'readyValetLink'    => 'Preparing Valet...',
 ];
 
 $steps            = [];
@@ -49,6 +50,7 @@ $livewireSelector = function () {
         'livewire/livewire:^2.0' => 'Livewire [2.x]',
     ]);
 };
+$currentDirectoryName = str(__DIR__)->afterLast('/')->value();
 /** end */
 
 $type = select('Start by selection what you want to do:', [
@@ -96,14 +98,18 @@ if ($type === 'packages') {
             hint: 'Use . to current folder'
         );
     }
+
+    $steps[] = 'readyValetLink';
 }
 
 function readyEnvironment(): void
 {
+    global $currentDirectoryName;
+
     $content = file_get_contents('.env');
-    $folder = str(__DIR__)->afterLast('/')->value();
     $content = str_replace('DB_CONNECTION=mysql', 'DB_CONNECTION=sqlite', $content);
-    $content = str_replace("DB_DATABASE=$folder", 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
+    //TODO: verificar uma forma de pegar o banco do usuário ao invés do AJ
+    $content = str_replace("DB_DATABASE=$currentDirectoryName", 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
 
     file_put_contents('.env', $content);
 }
@@ -277,6 +283,27 @@ function readyMigration(): bool
     return runCommand("php artisan migrate:fresh --seed");
 }
 
+function readyValetLink(): bool
+{
+    global $linkValet;
+
+    if (!$linkValet) return true;
+
+    if (!runCommand("valet link $linkValet")) {
+        return false;
+    }
+
+    $env = file_get_contents('.env');
+
+    preg_match('/APP_URL=(.*)/', $env, $matches);
+
+    $env = str_replace($matches[0], "APP_URL=http://$linkValet.test", $env);
+
+    file_put_contents('.env', $env);
+
+    return true;
+}
+
 function runCommand(string $command): bool
 {
     try {
@@ -305,12 +332,8 @@ foreach ($steps as $step) {
     }, STEPS[$step]);
 }
 
-if ($linkValet) {
-    runCommand("valet link $linkValet");
-}
-
 info('Your project is ready to be used! 🚀');
 
 sleep(3);
 
-unlink(__FILE__);
+// unlink(__FILE__);
