@@ -14,16 +14,17 @@ use function Laravel\Prompts\{confirm, info, multiselect, select, spin, text};
 
 /** Default Zone */
 const OPTIONS = [
-    'readyEnvironment'  => 'Prepare .env with sqlite',
-    'readyLivewire'     => '[Package] Install Livewire',
-    'readySeeder'       => 'Prepare DatabaseSeeder',
-    'readyProvider'     => 'Prepare AppServiceProvider',
-    'readyAlpine'       => 'Remove AlpineJs',
-    'readyPint'         => '[Package] Install Laravel Pint',
-    'readyLarastan'     => '[Package] Install LaraStan',
-    'readyLaravelDebug' => '[Package] Install Laravel DebugBar',
-    'readyIdeHelper'    => '[Package] Install Laravel IDE Helper',
-    'readyMigration'    => 'Run migrations',
+    'readyEnvironment'    => 'Prepare .env with sqlite',
+    'readyLivewire'       => '[Package] Install Livewire',
+    'readySeeder'         => 'Prepare DatabaseSeeder',
+    'readyProvider'       => 'Prepare AppServiceProvider',
+    'readyAlpine'         => 'Remove AlpineJs',
+    'readyPint'           => '[Package] Install Laravel Pint',
+    'readyLarastan'       => '[Package] Install LaraStan',
+    'readyLaravelDebug'   => '[Package] Install Laravel DebugBar',
+    'readyIdeHelper'      => '[Package] Install Laravel IDE Helper',
+    'readyMigration'      => 'Run migrations',
+    'readyRemoveComments' => 'Remove Unnecessary Default Comments',
 ];
 
 const STEPS = [
@@ -306,6 +307,40 @@ function readyValetLink(): bool
     return true;
 }
 
+function readyRemoveComments(): bool
+{
+    function filesRecursively($directory): array
+    {
+        $fileList = [];
+
+        $files = glob($directory . '/*');
+
+        foreach ($files as $file) {
+            if (is_dir($file)) {
+                $fileList = array_merge($fileList, filesRecursively($file));
+            } else {
+                $fileList[] = $file;
+            }
+        }
+
+        return $fileList;
+    }
+
+    $files = array_merge(
+        filesRecursively(__DIR__ . '/app'),
+        filesRecursively(__DIR__ . '/database')
+    );
+
+    foreach ($files as $file) {
+        $content        = file_get_contents($file);
+        $cleanedContent = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', $content);
+
+        file_put_contents($file, $cleanedContent);
+    }
+
+    return true;
+}
+
 function runCommand(string $command): bool
 {
     try {
@@ -315,7 +350,7 @@ function runCommand(string $command): bool
             ->run();
 
         return true;
-    } catch (Exception $e) {
+    } catch (Exception) {
         return false;
     }
 }
