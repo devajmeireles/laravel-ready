@@ -1,0 +1,21 @@
+{
+    "name": "devajmeireles/laravel-ready",
+    "description": "Simple PHP file to prepare Laravel projects",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "DevAjMeireles\\LaravelReady\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "AJ Meireles",
+            "email": "alvaro.meireles@live.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require-dev": {
+        "laravel/pint": "^1.12"
+    }
+}
