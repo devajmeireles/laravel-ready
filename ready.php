@@ -125,14 +125,20 @@ function getEnvironmentContent(): bool|string
     return file_get_contents('.env');
 }
 
-function executeEnvironmentPreparation(): void
+function executeEnvironmentPreparation(): bool|string
 {
     global $envContent;
 
-    $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=sqlite', $envContent);
-    $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
+    try {
+        $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=sqlite', $envContent);
+        $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
 
-    file_put_contents('.env', $content);
+        file_put_contents('.env', $content);
+
+        return true;
+    } catch (Exception $e) {
+        return $e->getMessage();
+    }
 }
 
 function executeLivewirePreparation(): bool|string
@@ -150,41 +156,53 @@ function executeLivewirePreparation(): bool|string
     return executeAlpineJsPreparation();
 }
 
-function executeSeederPreparation(): void //OK
+function executeSeederPreparation(): bool|string
 {
-    $file  = file_get_contents('database/seeders/DatabaseSeeder.php');
-    $lines = explode("\n", $file);
+    try {
+        $file  = file_get_contents('database/seeders/DatabaseSeeder.php');
+        $lines = explode("\n", $file);
 
-    foreach ($lines as $key => $line) {
-        if (
-            empty($line) ||
-            !str_contains($line, '//') ||
-            str_contains($line, 'WithoutModelEvents') ||
-            str_contains($line, 'factory(10)')
-        ) {
-            continue;
+        foreach ($lines as $key => $line) {
+            if (
+                empty($line) ||
+                !str_contains($line, '//') ||
+                str_contains($line, 'WithoutModelEvents') ||
+                str_contains($line, 'factory(10)')
+            ) {
+                continue;
+            }
+
+            $lines[$key] = str_replace('//', '', $line);
         }
 
-        $lines[$key] = str_replace('//', '', $line);
-    }
+        file_put_contents('database/seeders/DatabaseSeeder.php', implode("\n", $lines));
 
-    file_put_contents('database/seeders/DatabaseSeeder.php', implode("\n", $lines));
+        return true;
+    } catch (Exception $e) {
+        return $e->getMessage();
+    }
 }
 
-function executeAppServiceProviderPreparation(): void // OK
+function executeAppServiceProviderPreparation(): bool|string
 {
-    $file  = file_get_contents('app/Providers/AppServiceProvider.php');
-    $lines = explode("\n", $file);
+    try {
+        $file  = file_get_contents('app/Providers/AppServiceProvider.php');
+        $lines = explode("\n", $file);
 
-    foreach ($lines as $key => $line) {
-        if (empty($line) || $key !== 21) {
-            continue;
+        foreach ($lines as $key => $line) {
+            if (empty($line) || $key !== 21) {
+                continue;
+            }
+
+            $lines[$key] = str_replace('//', 'auth()->loginUsingId(1);', $line);
         }
 
-        $lines[$key] = str_replace('//', 'auth()->loginUsingId(1);', $line);
-    }
+        file_put_contents('app/Providers/AppServiceProvider.php', implode("\n", $lines));
 
-    file_put_contents('app/Providers/AppServiceProvider.php', implode("\n", $lines));
+        return true;
+    } catch (Exception $e) {
+        return $e->getMessage();
+    }
 }
 
 function executeAlpineJsPreparation(): bool|string
@@ -202,7 +220,7 @@ function executeAlpineJsPreparation(): bool|string
 
         $pattern = "/import\s+'\.\/bootstrap';/";
         $content = preg_replace($pattern, '', file_get_contents('resources/js/app.js'));
-        file_put_contents('resources/js/app.js', implode("\n", $content));
+        file_put_contents('resources/js/app.js', $content);
 
         return executeCommand("npm run build");
     } catch (Exception $e) {
