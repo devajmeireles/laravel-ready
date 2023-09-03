@@ -26,11 +26,10 @@ $actions = [
     'executeLivewirePreparation'           => 'Install Livewire',
     'executeSeederPreparation'             => 'Prepare DatabaseSeeder',
     'executeAppServiceProviderPreparation' => 'Prepare AppServiceProvider',
-    'executeAlpineJsPreparation'           => 'Remove AlpineJs',
-    'executePintPreparation'               => '[Package] Install Laravel Pint',
-    'executeLaraStanPreparation'           => '[Package] Install LaraStan',
-    'executeLaravelDebugBarPreparation'    => '[Package] Install Laravel DebugBar',
-    'executeIdeHelperPreparation'          => '[Package] Install Laravel IDE Helper',
+    'executePintPreparation'               => '[Dev. Tool] Install Laravel Pint',
+    'executeLaraStanPreparation'           => '[Dev. Tool] Install LaraStan',
+    'executeLaravelDebugBarPreparation'    => '[Dev. Tool] Install Laravel DebugBar',
+    'executeIdeHelperPreparation'          => '[Dev. Tool] Install Laravel IDE Helper',
     'executeMigrations'                    => 'Run Migrations',
     'executeCommentsRemoval'               => 'Remove Unnecessary Default Comments',
 ];
@@ -40,6 +39,7 @@ $messages = [
     'executeLivewirePreparation'           => 'Installing Livewire...',
     'executeSeederPreparation'             => 'Preparing DatabaseSeeder...',
     'executeAppServiceProviderPreparation' => 'Preparing AppServiceProvider...',
+    'executeAlpineJsPreparation'           => 'Removing AlpineJs...',
     'executePintPreparation'               => 'Installing Laravel Pint...',
     'executeLaraStanPreparation'           => 'Installing LaraStan...',
     'executeLaravelDebugBarPreparation'    => 'Installing Laravel Debugbar...',
@@ -71,8 +71,8 @@ $type = select('What do you want to do?', [
 if ($type === 'packages') {
     /** Packages Only */
     $packages = collect($actions)
-        ->filter(fn ($key) => str_contains($key, '[Package]'))
-        ->mapWithKeys(fn ($value, $key) => [$key => str_replace('[Package] ', '', $value)])
+        ->filter(fn ($key) => str_contains($key, '[Dev. Tool]'))
+        ->mapWithKeys(fn ($value, $key) => [$key => str_replace('[Dev. Tool] ', '', $value)])
         ->toArray();
 
     $selecteds = multiselect('Select the packages:', $packages, scroll: 20, required: true);
@@ -86,7 +86,7 @@ if ($type === 'packages') {
 } else {
     /** Full New Project */
     $actions = collect($actions)
-        ->map(fn ($value) => str_replace('[Package] ', '', $value))
+        ->map(fn ($value) => str_replace('[Dev. Tool] ', '', $value))
         ->toArray();
 
     $executionSteps = multiselect('What do you want to do?', $actions, scroll: 20, required: true);
