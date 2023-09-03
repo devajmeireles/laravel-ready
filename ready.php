@@ -40,7 +40,6 @@ $messages = [
     'executeLivewirePreparation'           => 'Installing Livewire...',
     'executeSeederPreparation'             => 'Preparing DatabaseSeeder...',
     'executeAppServiceProviderPreparation' => 'Preparing AppServiceProvider...',
-    'executeAlpineJsPreparation'           => 'Removing AlpineJs...',
     'executePintPreparation'               => 'Installing Laravel Pint...',
     'executeLaraStanPreparation'           => 'Installing LaraStan...',
     'executeLaravelDebugBarPreparation'    => 'Installing Laravel Debugbar...',
@@ -50,10 +49,10 @@ $messages = [
     'executeCommentsRemoval'               => 'Removing Unnecessary Comments...',
 ];
 
-$executionSteps       = [];
-$linkValet            = null;
-$livewireVersion      = null;
-$alpineRemoval        = null;
+$executionSteps  = [];
+$linkValet       = null;
+$livewireVersion = null;
+$alpineRemoval   = null;
 
 $livewireSelector = function () {
     return select('Select Livewire version:', [
@@ -130,6 +129,8 @@ function executeEnvironmentPreparation(): bool|string
     global $envContent;
 
     try {
+        throw new Exception('test');
+
         $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=sqlite', $envContent);
         $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
 
@@ -145,15 +146,21 @@ function executeLivewirePreparation(): bool|string
 {
     global $livewireVersion;
 
-    if (($result = executeCommand("composer require $livewireVersion")) !== true) {
-        return $result;
-    }
+    //TODO: verificar se o livewire está instalado em uma versão diferente da selecionada
 
-    if ($livewireVersion !== 'livewire/livewire:^3.0') {
-        return true;
-    }
+    try {
+        if (($result = executeCommand("composer require $livewireVersion")) !== true) {
+            return $result;
+        }
 
-    return executeAlpineJsPreparation();
+        if ($livewireVersion === 'livewire/livewire:^2.0') {
+            return true;
+        }
+
+        return executeAlpineJsRemovalPreparation();
+    } catch (Exception $e) {
+        return $e->getMessage();
+    }
 }
 
 function executeSeederPreparation(): bool|string
@@ -205,14 +212,8 @@ function executeAppServiceProviderPreparation(): bool|string
     }
 }
 
-function executeAlpineJsPreparation(): bool|string
+function executeAlpineJsRemovalPreparation(): bool|string
 {
-    global $livewireVersion;
-
-    if ($livewireVersion === 'livewire/livewire:^2.0') {
-        return true;
-    }
-
     try {
         if (($status = executeCommand("npm remove alpinejs")) !== true) {
             return $status;
@@ -312,17 +313,21 @@ function executeValetPreparation(): bool|string
         return true;
     }
 
-    if (($status = executeCommand("valet link $linkValet")) !== true) {
-        return $status;
+    try {
+        if (($status = executeCommand("valet link $linkValet")) !== true) {
+            return $status;
+        }
+
+        preg_match('/APP_URL=(.*)/', $envContent, $matches);
+
+        $env = str_replace($matches[0], "APP_URL=http://$linkValet.test", $envContent);
+
+        file_put_contents('.env', $env);
+
+        return true;
+    } catch (Exception $e) {
+        return $e->getMessage();
     }
-
-    preg_match('/APP_URL=(["\'])(.*?)\\1/', $envContent, $matches);
-
-    $env = str_replace($matches[0], "APP_URL=http://$linkValet.test", $envContent);
-
-    file_put_contents('.env', $env);
-
-    return true;
 }
 
 function executeCommentsRemoval(): bool|string
@@ -383,7 +388,7 @@ foreach ($executionSteps as $step) {
                 throw new Exception($result);
             }
         } catch (Exception $e) {
-            echo "$step failed: {$e->getMessage()}";
+            file_put_contents('storage/logs/laravel-ready.log', $e->getMessage() . PHP_EOL, FILE_APPEND);
         }
 
         return true;
