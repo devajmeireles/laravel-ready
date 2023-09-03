@@ -50,10 +50,10 @@ $messages = [
     'executeCommentsRemoval'               => 'Removing Unnecessary Comments...',
 ];
 
-$executionSteps       = [];
-$linkValet            = null;
-$livewireVersion      = null;
-$currentDirectoryName = str(__DIR__)->afterLast('/')->value();
+$executionSteps  = [];
+$linkValet       = null;
+$livewireVersion = null;
+$alpineRemoval   = null;
 
 $livewireSelector = function () {
     return select('Select Livewire version:', [
@@ -86,6 +86,10 @@ if ($type === 'packages') {
     $executionSteps = $selecteds;
 } else {
     /** Full New Project */
+    $actions = collect($actions)
+        ->map(fn ($value) => str_replace('[Package] ', '', $value))
+        ->toArray();
+
     $executionSteps = multiselect('What do you want to do?', $actions, scroll: 20, required: true);
 
     if (in_array('executeLivewirePreparation', $executionSteps)) {
@@ -123,12 +127,12 @@ function getEnvironmentContent(): bool|string
 
 function executeEnvironmentPreparation(): void
 {
-    global $envContent, $currentDirectoryName;
+    global $envContent;
 
-    $content = $envContent;
-    $content = str_replace('DB_CONNECTION=mysql', 'DB_CONNECTION=sqlite', $content);
+    $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=sqlite', $envContent);
+
     //TODO: verificar uma forma de pegar o banco do usuário ao invés do AJ
-    $content = str_replace("DB_DATABASE=$currentDirectoryName", 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
+    $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
 
     file_put_contents('.env', $content);
 }
@@ -137,7 +141,15 @@ function executeLivewirePreparation(): bool|string
 {
     global $livewireVersion;
 
-    return executeCommand("composer require $livewireVersion");
+    if (($result = executeCommand("composer require $livewireVersion")) !== true) {
+        return $result;
+    }
+
+    if ($livewireVersion !== 'livewire/livewire:^3.0') {
+        return true;
+    }
+
+    return executeAlpineJsPreparation();
 }
 
 function executeSeederPreparation(): void //OK
@@ -195,24 +207,6 @@ function executeAlpineJsPreparation(): bool|string
         file_put_contents('resources/js/app.js', implode("\n", $content));
 
         return executeCommand("npm run build");
-
-        //        $lines = explode("\n", $file);
-        //
-        //        foreach ($lines as $key => $line) {
-        //            $line = strtolower($line);
-        //
-        //            if (!str_contains($line, 'alpine')) {
-        //                continue;
-        //            }
-        //
-        //            unset($lines[$key]);
-        //        }
-        //
-        //        $lines = array_filter($lines);
-        //
-        //        file_put_contents('resources/js/app.js', implode("\n", $lines));
-        //
-        //        return executeCommand("npm run build");
     } catch (Exception $e) {
         return $e->getMessage();
     }
