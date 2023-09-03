@@ -50,10 +50,10 @@ $messages = [
     'executeCommentsRemoval'               => 'Removing Unnecessary Comments...',
 ];
 
-$executionSteps  = [];
-$linkValet       = null;
-$livewireVersion = null;
-$alpineRemoval   = null;
+$executionSteps       = [];
+$linkValet            = null;
+$livewireVersion      = null;
+$alpineRemoval        = null;
 
 $livewireSelector = function () {
     return select('Select Livewire version:', [
@@ -113,9 +113,9 @@ if ($type === 'packages') {
             },
             hint: "Use . to current folder. You don't need to add .test"
         );
-    }
 
-    $executionSteps[] = 'executeValetPreparation';
+        $executionSteps[] = 'executeValetPreparation';
+    }
 }
 /** End Execution Zone */
 
@@ -130,8 +130,6 @@ function executeEnvironmentPreparation(): void
     global $envContent;
 
     $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=sqlite', $envContent);
-
-    //TODO: verificar uma forma de pegar o banco do usuário ao invés do AJ
     $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
 
     file_put_contents('.env', $content);
@@ -219,8 +217,6 @@ function executePintPreparation(): bool|string
             return $status;
         }
 
-        file_put_contents('pint.json', '');
-
         $content = (new Client())->get('https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json');
 
         file_put_contents('pint.json', $content->getBody()->getContents());
@@ -302,7 +298,7 @@ function executeValetPreparation(): bool|string
         return $status;
     }
 
-    preg_match('/APP_URL=(.*)/', $envContent, $matches);
+    preg_match('/APP_URL=(["\'])(.*?)\\1/', $envContent, $matches);
 
     $env = str_replace($matches[0], "APP_URL=http://$linkValet.test", $envContent);
 
@@ -314,6 +310,7 @@ function executeValetPreparation(): bool|string
 function executeCommentsRemoval(): bool|string
 {
     try {
+        //Note: Since Laravel is not bootstrapped we can't use Laravel File Facade here.
         function filesRecursively($directory): array
         {
             $fileList = [];
@@ -331,10 +328,7 @@ function executeCommentsRemoval(): bool|string
             return $fileList;
         }
 
-        $files = array_merge(
-            filesRecursively(__DIR__ . '/app'),
-            filesRecursively(__DIR__ . '/database')
-        );
+        $files = array_merge(filesRecursively(__DIR__ . '/app'), filesRecursively(__DIR__ . '/database'));
 
         foreach ($files as $file) {
             $content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
