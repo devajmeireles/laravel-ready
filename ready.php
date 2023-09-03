@@ -95,6 +95,7 @@ if ($type === 'packages') {
         $livewireVersion = $livewireSelector();
     }
 
+    //TODO: exibir isso se houver o valet instalado
     if (confirm('Do you want to generate a Valet link?')) {
         $linkValet = text(
             'Enter the link name',
