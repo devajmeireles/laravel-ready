@@ -133,17 +133,11 @@ function executeEnvironmentPreparation(): void
     file_put_contents('.env', $content);
 }
 
-function executeLivewirePreparation(): bool
+function executeLivewirePreparation(): bool|string
 {
     global $livewireVersion;
 
-    try {
-        return executeCommand("composer require $livewireVersion");
-    } catch (Exception $e) {
-        //
-    }
-
-    return false;
+    return executeCommand("composer require $livewireVersion");
 }
 
 function executeSeederPreparation(): void //OK
@@ -152,19 +146,12 @@ function executeSeederPreparation(): void //OK
     $lines = explode("\n", $file);
 
     foreach ($lines as $key => $line) {
-        if (empty($line)) {
-            continue;
-        }
-
-        if (!str_contains($line, '//')) {
-            continue;
-        }
-
-        if (str_contains($line, 'WithoutModelEvents')) {
-            continue;
-        }
-
-        if (str_contains($line, 'factory(10)')) {
+        if (
+            empty($line) ||
+            !str_contains($line, '//') ||
+            str_contains($line, 'WithoutModelEvents') ||
+            str_contains($line, 'factory(10)')
+        ) {
             continue;
         }
 
@@ -180,11 +167,7 @@ function executeAppServiceProviderPreparation(): void // OK
     $lines = explode("\n", $file);
 
     foreach ($lines as $key => $line) {
-        if (empty($line)) {
-            continue;
-        }
-
-        if ($key !== 21) {
+        if (empty($line) || $key !== 21) {
             continue;
         }
 
@@ -194,7 +177,7 @@ function executeAppServiceProviderPreparation(): void // OK
     file_put_contents('app/Providers/AppServiceProvider.php', implode("\n", $lines));
 }
 
-function executeAlpineJsPreparation(): bool
+function executeAlpineJsPreparation(): bool|string
 {
     global $livewireVersion;
 
@@ -203,44 +186,43 @@ function executeAlpineJsPreparation(): bool
     }
 
     try {
-        $status = executeCommand("npm remove alpinejs");
-
-        if (!$status) {
-            return false;
+        if (($status = executeCommand("npm remove alpinejs")) !== true) {
+            return $status;
         }
 
-        $file  = file_get_contents('resources/js/app.js');
-        $lines = explode("\n", $file);
-
-        foreach ($lines as $key => $line) {
-            $line = strtolower($line);
-
-            if (!str_contains($line, 'alpine')) {
-                continue;
-            }
-
-            unset($lines[$key]);
-        }
-
-        $lines = array_filter($lines);
-
-        file_put_contents('resources/js/app.js', implode("\n", $lines));
+        $pattern = "/import\s+'\.\/bootstrap';/";
+        $content = preg_replace($pattern, '', file_get_contents('resources/js/app.js'));
+        file_put_contents('resources/js/app.js', implode("\n", $content));
 
         return executeCommand("npm run build");
-    } catch (Exception) {
-        //
-    }
 
-    return false;
+        //        $lines = explode("\n", $file);
+        //
+        //        foreach ($lines as $key => $line) {
+        //            $line = strtolower($line);
+        //
+        //            if (!str_contains($line, 'alpine')) {
+        //                continue;
+        //            }
+        //
+        //            unset($lines[$key]);
+        //        }
+        //
+        //        $lines = array_filter($lines);
+        //
+        //        file_put_contents('resources/js/app.js', implode("\n", $lines));
+        //
+        //        return executeCommand("npm run build");
+    } catch (Exception $e) {
+        return $e->getMessage();
+    }
 }
 
-function executePintPreparation(): bool
+function executePintPreparation(): bool|string
 {
     try {
-        $status = executeCommand("composer require laravel/pint --dev");
-
-        if (!$status) {
-            return false;
+        if (($status = executeCommand("composer require laravel/pint --dev")) !== true) {
+            return $status;
         }
 
         file_put_contents('pint.json', '');
@@ -254,20 +236,16 @@ function executePintPreparation(): bool
         file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
         return true;
-    } catch (Exception) {
-        //
+    } catch (Exception $e) {
+        return $e->getMessage();
     }
-
-    return false;
 }
 
-function executeLaraStanPreparation(): bool
+function executeLaraStanPreparation(): bool|string
 {
     try {
-        $status = executeCommand("composer require nunomaduro/larastan:^2.0 --dev");
-
-        if (!$status) {
-            return false;
+        if (($status = executeCommand("composer require nunomaduro/larastan:^2.0 --dev")) !== true) {
+            return $status;
         }
 
         $content = <<<FILE
@@ -296,29 +274,29 @@ FILE;
         $composer                   = json_decode(file_get_contents('composer.json'));
         $composer->scripts->analyse = './vendor/bin/phpstan analyse --memory-limit=2G';
         file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
-    } catch (Exception) {
-        //
-    }
 
-    return false;
+        return true;
+    } catch (Exception $e) {
+        return $e->getMessage();
+    }
 }
 
-function executeLaravelDebugBarPreparation(): bool
+function executeLaravelDebugBarPreparation(): bool|string
 {
     return executeCommand("composer require barryvdh/laravel-debugbar --dev");
 }
 
-function executeIdeHelperPreparation(): bool
+function executeIdeHelperPreparation(): bool|string
 {
     return executeCommand("composer require barryvdh/laravel-ide-helper --dev");
 }
 
-function executeMigrations(): bool
+function executeMigrations(): bool|string
 {
     return executeCommand("php artisan migrate:fresh --seed");
 }
 
-function executeValetPreparation(): bool
+function executeValetPreparation(): bool|string
 {
     global $envContent, $linkValet;
 
@@ -326,8 +304,8 @@ function executeValetPreparation(): bool
         return true;
     }
 
-    if (!executeCommand("valet link $linkValet")) {
-        return false;
+    if (($status = executeCommand("valet link $linkValet")) !== true) {
+        return $status;
     }
 
     preg_match('/APP_URL=(.*)/', $envContent, $matches);
@@ -339,40 +317,44 @@ function executeValetPreparation(): bool
     return true;
 }
 
-function executeCommentsRemoval(): bool
+function executeCommentsRemoval(): bool|string
 {
-    function filesRecursively($directory): array
-    {
-        $fileList = [];
+    try {
+        function filesRecursively($directory): array
+        {
+            $fileList = [];
 
-        $files = glob($directory . '/*');
+            $files = glob($directory . '/*');
 
-        foreach ($files as $file) {
-            if (is_dir($file)) {
-                $fileList = array_merge($fileList, filesRecursively($file));
-            } else {
-                $fileList[] = $file;
+            foreach ($files as $file) {
+                if (is_dir($file)) {
+                    $fileList = array_merge($fileList, filesRecursively($file));
+                } else {
+                    $fileList[] = $file;
+                }
             }
+
+            return $fileList;
         }
 
-        return $fileList;
+        $files = array_merge(
+            filesRecursively(__DIR__ . '/app'),
+            filesRecursively(__DIR__ . '/database')
+        );
+
+        foreach ($files as $file) {
+            $content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
+
+            file_put_contents($file, $content);
+        }
+
+        return true;
+    } catch (Exception $e) {
+        return $e->getMessage();
     }
-
-    $files = array_merge(
-        filesRecursively(__DIR__ . '/app'),
-        filesRecursively(__DIR__ . '/database')
-    );
-
-    foreach ($files as $file) {
-        $content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
-
-        file_put_contents($file, $content);
-    }
-
-    return true;
 }
 
-function executeCommand(string $command): bool
+function executeCommand(string $command): bool|string
 {
     try {
         Process::fromShellCommandline("$command")
@@ -381,8 +363,8 @@ function executeCommand(string $command): bool
             ->run();
 
         return true;
-    } catch (Exception) {
-        return false;
+    } catch (Exception $e) {
+        return $e->getMessage();
     }
 }
 /** End Functions Zone */
@@ -407,4 +389,4 @@ info('Your project is ready to be used! 🚀 The file will be deleted in 3 secon
 
 sleep(3);
 
-unlink(__FILE__);
+// unlink(__FILE__);
