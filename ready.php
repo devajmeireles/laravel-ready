@@ -80,9 +80,9 @@ if ($type === 'packages') {
 
     if (in_array('executeLivewirePreparation', array_keys($selecteds))) {
         $livewireVersion = $livewireSelector();
+        $selecteds[]     = 'executeAlpineJsPreparation';
     }
 
-    //TODO: ao selecionar o Livewire.. chamar a instalação do Alpine pra ver o que tem que fazer
     $executionSteps = $selecteds;
 } else {
     /** Full New Project */
