@@ -172,6 +172,22 @@ function executeEnvironmentPreparation(): bool|string
         $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=' . $configurations['DB_CONNECTION'], $env);
         $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=' . $configurations['DB_DATABASE'], $content);
 
+        if (isset($configurations['DB_PORT'])) {
+            $content = preg_replace('/^(DB_PORT\s*=\s*).*$/m', 'DB_PORT=' . $configurations['DB_PORT'], $content);
+        }
+
+        if (isset($configurations['DB_HOST'])) {
+            $content = preg_replace('/^(DB_HOST\s*=\s*).*$/m', 'DB_HOST=' . $configurations['DB_HOST'], $content);
+        }
+
+        if (isset($configurations['DB_USERNAME'])) {
+            $content = preg_replace('/^(DB_USERNAME\s*=\s*).*$/m', 'DB_USERNAME=' . $configurations['DB_USERNAME'], $content);
+        }
+
+        if (isset($configurations['DB_PASSWORD'])) {
+            $content = preg_replace('/^(DB_PASSWORD\s*=\s*).*$/m', 'DB_PASSWORD=' . $configurations['DB_PASSWORD'], $content);
+        }
+
         file_put_contents('.env', $content);
 
         return true;
