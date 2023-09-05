@@ -51,7 +51,7 @@ php laravel-ready.php
 
 ### Install Dev. Tools Packages:
 
-<img src="images/dev-tools-packages.png">
+<img src="images/dev-tools-packages.png" alt="dev tools packages">
 
 When select `Install Laravel Pint`:
 - The package will download the [Laravel Pint](https://laravel.com/docs/pint) and configure the `PINT_PRESET` in the `pint.json` file. **You can also configure the preset from one of your Gists. Laravel Ready will take it automatically,** otherwise [use any pre-built Laravel Pint preset](https://laravel.com/docs/10.x/pint#presets).
@@ -64,19 +64,20 @@ DB_DATABASE=/Users/aj/database/database.sqlite
 PINT_PRESET=https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json
 ```
 
-- A `format` composer script will be created at the `composer.json`, to provide the ability to run the Pint using: `composer format`.
+- The `format` composer script will be created at the `composer.json`, to provide the ability to run the Pint using: `composer format`.
 
 When select `Install LaraStan`:
 - The package will download and install the [LaraStan package](https://github.com/nunomaduro/larastan)
-- A `analyse` composer script will be created at the `composer.json`, to provide the ability to run the Pint using: `composer analyse`.
+- The `phpstan.neon` file will be created with default configuration.
+- The `analyse` composer script will be created at the `composer.json`, to provide the ability to run the Pint using: `composer analyse`.
 
-When both is selected, a `test` composer scripts will be created to provide the ability to run both using: `composer test`.
+**When both is selected,** a `test` composer scripts will be created to provide the ability to run both using: `composer test`.
 
 ### Prepare New Project
 
-<img src="images/prepare-new-project.png">
+<img src="images/prepare-new-project.png" alt="prepare new project" />
 
-This option is self-explanatory. The unique observations here is:
+This option is self-explanatory. The observations here are:
 
 1. `Prepare DatabaseSeeder`:
 - Will uncomment the code from the `DatabaseSeeder` class:
@@ -113,5 +114,5 @@ public function boot(): void
 
 1. For safety, you can't run this script in production.
 2. Livewire V3 installation will automatically remove AlpineJS.
-3. The script can generate a [valet link](https://laravel.com/docs/valet) automatically when select `Prepare New Project` - needs Valet installed.
+3. The script can generate a [valet link](https://laravel.com/docs/valet) automatically when select `Prepare New Project`.
 4. Logs can be created in `storage/logs/laravel-ready.log`.

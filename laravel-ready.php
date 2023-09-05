@@ -23,16 +23,16 @@ use Symfony\Component\Process\Process;
 
 /** Default Zone */
 $actions = [
-    'executeEnvironmentPreparation'        => 'Prepare .env with Database Credentials',
-    'executeSeederPreparation'             => 'Prepare DatabaseSeeder',
-    'executeAppServiceProviderPreparation' => 'Prepare AppServiceProvider',
-    'executeLivewirePreparation'           => 'Install Livewire',
-    'executePintPreparation'               => '[Dev. Tool] Install Laravel Pint',
-    'executeLaraStanPreparation'           => '[Dev. Tool] Install LaraStan',
-    'executeLaravelDebugBarPreparation'    => '[Dev. Tool] Install Laravel DebugBar',
-    'executeIdeHelperPreparation'          => '[Dev. Tool] Install Laravel IDE Helper',
-    'executeMigrations'                    => 'Run Migrations',
-    'executeCommentsRemoval'               => 'Remove Unnecessary Laravel Comments',
+    '1-executeEnvironmentPreparation'        => 'Prepare .env with Database Credentials',
+    '7-executeSeederPreparation'             => 'Prepare DatabaseSeeder',
+    '9-executeAppServiceProviderPreparation' => 'Prepare AppServiceProvider',
+    '6-executeLivewirePreparation'           => 'Install Livewire',
+    '2-executePintPreparation'               => '[Dev. Tool] Install Laravel Pint',
+    '3-executeLaraStanPreparation'           => '[Dev. Tool] Install LaraStan',
+    '4-executeLaravelDebugBarPreparation'    => '[Dev. Tool] Install Laravel DebugBar',
+    '5-executeIdeHelperPreparation'          => '[Dev. Tool] Install Laravel IDE Helper',
+    '8-executeMigrations'                    => 'Run Migrations',
+    '10-executeCommentsRemoval'              => 'Remove Unnecessary Laravel Comments',
 ];
 
 $messages = [
@@ -99,7 +99,7 @@ if ($type === 'packages') {
     $process = new Process(['which', 'valet']);
     $process->run();
 
-    if (filled(trim($process->getOutput())) && confirm('Do you want to generate a Valet link?')) {
+    if (filled(trim($process->getOutput())) && confirm('Do you want to generate a Valet link?', false)) {
         $valet = text(
             'Enter the link name',
             required: true,
@@ -123,6 +123,13 @@ if ($type === 'packages') {
     if (in_array('executePintPreparation', $steps)) {
         $format = confirm('Do you want to format the code after the script runs?');
     }
+
+    // Organizating the execution order by the number before hyphen
+    $steps = collect($steps)
+        ->map(fn ($value) => explode('-', $value))
+        ->sortBy(fn ($value) => $value[0])
+        ->map(fn ($value) => $value[1])
+        ->toArray();
 }
 /** End Execution Zone */
 
