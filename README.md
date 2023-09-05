@@ -22,6 +22,9 @@ DB_DATABASE=/Users/aj/database/database.sqlite
 DB_USERNAME=
 DB_PASSWORD=
 
+# You can set a raw link from one of your Gists. 
+# The Laravel Ready will take the content and save 
+# it into pint.json, otherwise, you can use a pre-build Pint preset.
 PINT_PRESET=laravel
 ```
 
@@ -33,7 +36,7 @@ With the exception `PINT_PRESET`, all these settings will be overridden in the p
 
 ## Usage
 
-1. Download the file by using `wget` in the root of your project:
+1. Download the file by using `wget` **in the root of your project:**
 
 ```bash
 wget https://aj.dev.br/laravel-ready.php
@@ -95,10 +98,10 @@ public function boot(): void
 ```
 
 3. `Run Migrations`:
-- Will run the `php artisan migrate:fresh --seed` - to create the default user that can be used in the `auth()->loginUsingId(1)`.
+- Will run the `php artisan migrate:fresh --seed` command.
 
 2. `Remove Unnecessary Laravel Comments`:
-- Will loop into all files from `app/` and `database/` to remove all unnecessary Laravel comments. **Only the codes with `//` will be preserved.**
+- Will loop into all files from `app/` and `database/` to remove all unnecessary Laravel comments.
 
 ## Additional Information
 
