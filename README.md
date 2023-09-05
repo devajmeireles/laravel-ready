@@ -25,6 +25,8 @@ DB_PASSWORD=
 # You can set a raw link from one of your Gists. 
 # The Laravel Ready will take the content and save 
 # it into pint.json, otherwise, you can use a pre-build Pint preset.
+# example: PINT_PRESET=https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json
+
 PINT_PRESET=laravel
 ```
 
