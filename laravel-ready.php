@@ -97,6 +97,7 @@ if ($type === 'packages') {
         ->map(fn ($value) => explode('-', $value))
         ->sortBy(fn ($value) => $value[0])
         ->map(fn ($value) => $value[1])
+        ->values()
         ->toArray();
 
     if (in_array('executeLivewirePreparation', $steps)) {
