@@ -92,6 +92,13 @@ if ($type === 'packages') {
 
     $steps = multiselect('What do you want to do?', $actions, scroll: 20, required: true);
 
+    // Organizating the execution order by the number before hyphen
+    $steps = collect($steps)
+        ->map(fn ($value) => explode('-', $value))
+        ->sortBy(fn ($value) => $value[0])
+        ->map(fn ($value) => $value[1])
+        ->toArray();
+
     if (in_array('executeLivewirePreparation', $steps)) {
         $livewire = $livewireSelector();
     }
@@ -123,13 +130,6 @@ if ($type === 'packages') {
     if (in_array('executePintPreparation', $steps)) {
         $format = confirm('Do you want to format the code after the script runs?');
     }
-
-    // Organizating the execution order by the number before hyphen
-    $steps = collect($steps)
-        ->map(fn ($value) => explode('-', $value))
-        ->sortBy(fn ($value) => $value[0])
-        ->map(fn ($value) => $value[1])
-        ->toArray();
 }
 /** End Execution Zone */
 
