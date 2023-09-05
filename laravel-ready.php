@@ -168,29 +168,32 @@ function executeEnvironmentPreparation(): bool|string
         return 'Unable to prepare the environment. Please, review the docs.';
     }
 
+    $connection = data_get($configurations, 'DB_CONNECTION');
+    $host       = data_get($configurations, 'DB_HOST');
+    $port       = data_get($configurations, 'DB_PORT');
+    $database   = data_get($configurations, 'DB_DATABASE');
+    $username   = data_get($configurations, 'DB_USERNAME');
+    $password   = data_get($configurations, 'DB_PASSWORD');
+
     try {
-        $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=' . $configurations['DB_CONNECTION'], $env);
-        $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=' . $configurations['DB_DATABASE'], $content);
-
-        $port     = data_get($configurations, 'DB_PORT');
-        $host     = data_get($configurations, 'DB_HOST');
-        $username = data_get($configurations, 'DB_USERNAME');
-        $password = data_get($configurations, 'DB_PASSWORD');
-
-        if ($port) {
-            $content = preg_replace('/^(DB_PORT\s*=\s*).*$/m', "DB_PORT=$port", $content);
-        }
+        $content = str_replace('DB_CONNECTION=mysql', "DB_CONNECTION=$connection", $env);
 
         if ($host) {
-            $content = preg_replace('/^(DB_HOST\s*=\s*).*$/m', "DB_HOST=$host", $content);
+            $content = str_replace('DB_HOST=127.0.0.1', "DB_HOST=$host", $content);
         }
 
+        if ($port) {
+            $content = str_replace('DB_PORT=3306', "DB_PORT=$port", $content);
+        }
+
+        $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', "DB_DATABASE=$database", $content);
+
         if ($username) {
-            $content = preg_replace('/^(DB_USERNAME\s*=\s*).*$/m', "DB_USERNAME=$username", $content);
+            $content = str_replace('DB_USERNAME=root', "DB_USERNAME=$username", $content);
         }
 
         if ($password) {
-            $content = preg_replace('/^(DB_PASSWORD\s*=\s*).*$/m', "DB_PASSWORD=$password" . PHP_EOL, $content);
+            $content = str_replace('DB_PASSWORD=', "DB_PASSWORD=$password", $content);
         }
 
         file_put_contents('.env', $content);

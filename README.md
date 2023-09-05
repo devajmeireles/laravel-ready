@@ -22,11 +22,6 @@ DB_DATABASE=/Users/aj/database/database.sqlite
 DB_USERNAME=
 DB_PASSWORD=
 
-# You can set a raw link from one of your Gists. 
-# The Laravel Ready will take the content and save 
-# it into pint.json, otherwise, you can use a pre-build Pint preset.
-# example: PINT_PRESET=https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json
-
 PINT_PRESET=laravel
 ```
 
@@ -60,6 +55,15 @@ php laravel-ready.php
 
 When select `Install Laravel Pint`:
 - The package will download the [Laravel Pint](https://laravel.com/docs/pint) and configure the `PINT_PRESET` in the `pint.json` file. **You can also configure the preset from one of your Gists. Laravel Ready will take it automatically,** otherwise [use any pre-built Laravel Pint preset](https://laravel.com/docs/10.x/pint#presets).
+
+This is my `~/.laravel` file, take it as an example:
+```dotenv
+DB_CONNECTION=sqlite
+DB_DATABASE=/Users/aj/database/database.sqlite
+
+PINT_PRESET=https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json
+```
+
 - A `format` composer script will be created at the `composer.json`, to provide the ability to run the Pint using: `composer format`.
 
 When select `Install LaraStan`:
