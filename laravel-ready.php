@@ -40,7 +40,6 @@ $messages = [
     'executeLivewirePreparation'           => 'Installing Livewire',
     'executeSeederPreparation'             => 'Preparing DatabaseSeeder',
     'executeAppServiceProviderPreparation' => 'Preparing AppServiceProvider',
-    'executeAlpineJsPreparation'           => 'Removing AlpineJs',
     'executePintPreparation'               => 'Installing Laravel Pint',
     'executeLaraStanPreparation'           => 'Installing LaraStan',
     'executeLaravelDebugBarPreparation'    => 'Installing Laravel Debugbar',
@@ -294,9 +293,8 @@ function executeAlpineJsRemovalPreparation(): bool|string
             return $status;
         }
 
-        $pattern = "/import\s+'\.\/bootstrap';/";
-        $content = preg_replace($pattern, '', file_get_contents('resources/js/app.js'));
-        file_put_contents('resources/js/app.js', $content);
+        unlink(__DIR__.'/resources/js/app.js');
+        file_put_contents(__DIR__.'/resources/js/app.js', "import './bootstrap';");
 
         return executeCommand("npm run build");
     } catch (Exception $e) {
