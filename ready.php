@@ -1,13 +1,14 @@
 <?php
 
-$envContent = getEnvironmentContent();
+$env            = environment();
+$configurations = configurations();
 
 /** Verification Zone */
 if (!file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
     exit("Please, run \"composer install\" before running this script." . PHP_EOL);
 }
 
-if ($envContent && str_contains($envContent, 'APP_ENV=production')) {
+if ($env && str_contains($env, 'APP_ENV=production')) {
     exit("For safety, you cannot run this script in production." . PHP_EOL);
 }
 /** End Verification Zone */
@@ -16,43 +17,43 @@ require $autoload;
 
 use GuzzleHttp\Client;
 
-use function Laravel\Prompts\{confirm, info, multiselect, select, spin, text};
+use function Laravel\Prompts\{confirm, error, info, multiselect, select, spin, text};
 
 use Symfony\Component\Process\Process;
 
 /** Default Zone */
 $actions = [
-    'executeEnvironmentPreparation'        => 'Prepare .env with SQLite',
-    'executeLivewirePreparation'           => 'Install Livewire',
+    'executeEnvironmentPreparation'        => 'Prepare `.env` with Database Credentials',
     'executeSeederPreparation'             => 'Prepare DatabaseSeeder',
     'executeAppServiceProviderPreparation' => 'Prepare AppServiceProvider',
+    'executeLivewirePreparation'           => 'Install Livewire',
     'executePintPreparation'               => '[Dev. Tool] Install Laravel Pint',
     'executeLaraStanPreparation'           => '[Dev. Tool] Install LaraStan',
     'executeLaravelDebugBarPreparation'    => '[Dev. Tool] Install Laravel DebugBar',
     'executeIdeHelperPreparation'          => '[Dev. Tool] Install Laravel IDE Helper',
     'executeMigrations'                    => 'Run Migrations',
-    'executeCommentsRemoval'               => 'Remove Unnecessary Default Comments',
+    'executeCommentsRemoval'               => 'Remove Unnecessary Laravel Comments',
 ];
 
 $messages = [
-    'executeEnvironmentPreparation'        => 'Preparing Environment...',
-    'executeLivewirePreparation'           => 'Installing Livewire...',
-    'executeSeederPreparation'             => 'Preparing DatabaseSeeder...',
-    'executeAppServiceProviderPreparation' => 'Preparing AppServiceProvider...',
-    'executeAlpineJsPreparation'           => 'Removing AlpineJs...',
-    'executePintPreparation'               => 'Installing Laravel Pint...',
-    'executeLaraStanPreparation'           => 'Installing LaraStan...',
-    'executeLaravelDebugBarPreparation'    => 'Installing Laravel Debugbar...',
-    'executeIdeHelperPreparation'          => 'Installing Laravel IDE Helper...',
-    'executeMigrations'                    => 'Running Migrations...',
-    'executeValetPreparation'              => 'Preparing Valet...',
-    'executeCommentsRemoval'               => 'Removing Unnecessary Comments...',
+    'executeEnvironmentPreparation'        => 'Preparing Environment',
+    'executeLivewirePreparation'           => 'Installing Livewire',
+    'executeSeederPreparation'             => 'Preparing DatabaseSeeder',
+    'executeAppServiceProviderPreparation' => 'Preparing AppServiceProvider',
+    'executeAlpineJsPreparation'           => 'Removing AlpineJs',
+    'executePintPreparation'               => 'Installing Laravel Pint',
+    'executeLaraStanPreparation'           => 'Installing LaraStan',
+    'executeLaravelDebugBarPreparation'    => 'Installing Laravel Debugbar',
+    'executeIdeHelperPreparation'          => 'Installing Laravel IDE Helper',
+    'executeMigrations'                    => 'Running Migrations',
+    'executeValetPreparation'              => 'Preparing Valet',
+    'executeCommentsRemoval'               => 'Removing Unnecessary Comments',
 ];
 
-$executionSteps  = [];
-$linkValet       = null;
-$livewireVersion = null;
-$alpineRemoval   = null;
+$steps    = [];
+$valet    = null;
+$livewire = null;
+$format   = false;
 
 $livewireSelector = function () {
     return select('Select Livewire version:', [
@@ -78,26 +79,28 @@ if ($type === 'packages') {
     $selecteds = multiselect('Select the packages:', $packages, scroll: 20, required: true);
 
     if (in_array('executeLivewirePreparation', array_keys($selecteds))) {
-        $livewireVersion = $livewireSelector();
-        $selecteds[]     = 'executeAlpineJsPreparation';
+        $livewire    = $livewireSelector();
+        $selecteds[] = 'executeAlpineJsPreparation';
     }
 
-    $executionSteps = $selecteds;
+    $steps = $selecteds;
 } else {
-    /** Full New Project */
+    /** New Project */
     $actions = collect($actions)
         ->map(fn ($value) => str_replace('[Dev. Tool] ', '', $value))
         ->toArray();
 
-    $executionSteps = multiselect('What do you want to do?', $actions, scroll: 20, required: true);
+    $steps = multiselect('What do you want to do?', $actions, scroll: 20, required: true);
 
-    if (in_array('executeLivewirePreparation', $executionSteps)) {
-        $livewireVersion = $livewireSelector();
+    if (in_array('executeLivewirePreparation', $steps)) {
+        $livewire = $livewireSelector();
     }
 
-    //TODO: exibir isso se houver o valet instalado
-    if (confirm('Do you want to generate a Valet link?')) {
-        $linkValet = text(
+    $process = new Process(['which', 'valet']);
+    $process->run();
+
+    if (filled(trim($process->getOutput())) && confirm('Do you want to generate a Valet link?')) {
+        $valet = text(
             'Enter the link name',
             required: true,
             validate: function ($value) {
@@ -114,26 +117,60 @@ if ($type === 'packages') {
             hint: "Use . to current folder. You don't need to add .test"
         );
 
-        $executionSteps[] = 'executeValetPreparation';
+        $steps[] = 'executeValetPreparation';
+    }
+
+    if (in_array('executePintPreparation', $steps)) {
+        $format = confirm('Do you want to format the code after the script runs?');
     }
 }
 /** End Execution Zone */
 
 /** Functions Zone */
-function getEnvironmentContent(): bool|string
+function environment(): bool|string
 {
     return file_get_contents('.env');
 }
 
+function configurations(): ?array
+{
+    $user = getenv('HOME');
+
+    if (!$user) {
+        return null;
+    }
+
+    $content = [];
+
+    foreach (explode("\n", file_get_contents("$user/.laravel")) as $value) {
+        if (empty($value)) {
+            continue;
+        }
+
+        [$key, $value] = explode('=', $value);
+
+        $content[$key] = $value;
+    }
+
+    return $content;
+}
+
+function result(string $message): void
+{
+    file_put_contents('storage/logs/laravel-ready.log', $message . PHP_EOL, FILE_APPEND);
+}
+
 function executeEnvironmentPreparation(): bool|string
 {
-    global $envContent;
+    global $env, $configurations;
+
+    if (blank($configurations)) {
+        return 'Unable to prepare the environment. Please, review the docs.';
+    }
 
     try {
-        throw new Exception('test');
-
-        $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=sqlite', $envContent);
-        $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=/Users/aj/database/database.sqlite', $content);
+        $content = preg_replace('/^(DB_CONNECTION\s*=\s*).*$/m', 'DB_CONNECTION=' . $configurations['DB_CONNECTION'], $env);
+        $content = preg_replace('/^(DB_DATABASE\s*=\s*).*$/m', 'DB_DATABASE=' . $configurations['DB_DATABASE'], $content);
 
         file_put_contents('.env', $content);
 
@@ -145,16 +182,21 @@ function executeEnvironmentPreparation(): bool|string
 
 function executeLivewirePreparation(): bool|string
 {
-    global $livewireVersion;
+    global $livewire;
 
-    //TODO: verificar se o livewire está instalado em uma versão diferente da selecionada
+    $desired  = str($livewire)->replace('livewire/livewire:', '')->__toString();
+    $composer = json_decode(file_get_contents('composer.json'), true);
+
+    if (($installed = data_get($composer, 'require.livewire/livewire')) && $installed !== $desired) {
+        return 'Livewire is already installed in a different version.';
+    }
 
     try {
-        if (($result = executeCommand("composer require $livewireVersion")) !== true) {
+        if (($result = executeCommand("composer require $livewire")) !== true) {
             return $result;
         }
 
-        if ($livewireVersion === 'livewire/livewire:^2.0') {
+        if ($livewire === 'livewire/livewire:^2.0') {
             return true;
         }
 
@@ -232,14 +274,22 @@ function executeAlpineJsRemovalPreparation(): bool|string
 
 function executePintPreparation(): bool|string
 {
+    global $configurations;
+
+    if (blank($configurations)) {
+        return 'Unable to prepare the Laravel Pint. Please, review the docs.';
+    }
+
     try {
         if (($status = executeCommand("composer require laravel/pint --dev")) !== true) {
             return $status;
         }
 
-        $content = (new Client())->get('https://gist.githubusercontent.com/devajmeireles/8c00117a89931c606ba4ebb2b5c58bd3/raw/e193a485029a46ad853aab526a92fd88359c149f/pint.json');
+        $preset   = $configurations['PINT_PRESET'] ?? null;
+        $external = filled($preset) && str_contains($preset, 'http');
+        $content  = $external ? (new Client())->get($preset) : ['preset' => $preset];
 
-        file_put_contents('pint.json', $content->getBody()->getContents());
+        file_put_contents('pint.json', $external ? $content->getBody()->getContents() : json_encode($content, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
         $composer                  = json_decode(file_get_contents('composer.json'));
         $composer->scripts->format = './vendor/bin/pint';
@@ -308,20 +358,20 @@ function executeMigrations(): bool|string
 
 function executeValetPreparation(): bool|string
 {
-    global $envContent, $linkValet;
+    global $env, $valet;
 
-    if (!$linkValet) {
+    if (!$valet) {
         return true;
     }
 
     try {
-        if (($status = executeCommand("valet link $linkValet")) !== true) {
+        if (($status = executeCommand("valet link $valet")) !== true) {
             return $status;
         }
 
-        preg_match('/APP_URL=(.*)/', $envContent, $matches);
+        preg_match('/APP_URL=(.*)/', $env, $matches);
 
-        $env = str_replace($matches[0], "APP_URL=http://$linkValet.test", $envContent);
+        $env = str_replace($matches[0], "APP_URL=http://$valet.test", $env);
 
         file_put_contents('.env', $env);
 
@@ -334,7 +384,6 @@ function executeValetPreparation(): bool|string
 function executeCommentsRemoval(): bool|string
 {
     try {
-        //Note: Since Laravel is not bootstrapped we can't use Laravel File Facade here.
         function filesRecursively($directory): array
         {
             $fileList = [];
@@ -355,7 +404,8 @@ function executeCommentsRemoval(): bool|string
         $files = array_merge(filesRecursively(__DIR__ . '/app'), filesRecursively(__DIR__ . '/database'));
 
         foreach ($files as $file) {
-            $content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
+            #$content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
+            $content = preg_replace('/\/\*(.*?)\*\//s', '', file_get_contents($file));
 
             file_put_contents($file, $content);
         }
@@ -382,23 +432,51 @@ function executeCommand(string $command): bool|string
 /** End Functions Zone */
 
 /** Steps Execution */
-foreach ($executionSteps as $step) {
-    spin(function () use ($step) {
-        try {
-            if (($result = $step()) !== true) {
-                throw new Exception($result);
-            }
-        } catch (Exception $e) {
-            file_put_contents('storage/logs/laravel-ready.log', $e->getMessage() . PHP_EOL, FILE_APPEND);
+foreach ($steps as $step) {
+    info($messages[$step] . "...");
+
+    try {
+        if (($result = $step()) !== true) {
+            throw new Exception($result);
         }
 
-        return true;
-    }, $messages[$step]);
+        info($messages[$step] . " ✅") . PHP_EOL;
+    } catch (Exception $exception) {
+        error($exception->getMessage()) . PHP_EOL;
+
+        result($exception->getMessage());
+    }
 }
 /** End Steps Execution */
 
+/** Extra Steps Zone */
+if ($format) {
+    info('Formatting Code...');
+
+    try {
+        if (($result = executeCommand("composer format")) !== true) {
+            throw new Exception($result);
+        }
+
+        info("Code Formatted ✅") . PHP_EOL;
+    } catch (Exception $exception) {
+        error($exception->getMessage()) . PHP_EOL;
+    }
+}
+
+if (in_array('executePintPreparation', $steps) && in_array('executeLaraStanPreparation', $steps)) {
+    $composer = json_decode(file_get_contents('composer.json'));
+
+    $composer->scripts->test = [
+        './vendor/bin/pint --test',
+        './vendor/bin/phpstan analyse --memory-limit=2G',
+    ];
+
+    file_put_contents('composer.json', json_encode($composer, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+}
+/** End Extra Steps Zone */
+
+/** Final */
 info('Your project is ready to be used! 🚀 The file will be deleted in 3 seconds.');
-
 sleep(3);
-
 // unlink(__FILE__);
