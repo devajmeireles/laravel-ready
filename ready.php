@@ -479,4 +479,4 @@ if (in_array('executePintPreparation', $steps) && in_array('executeLaraStanPrepa
 /** Final */
 info('Your project is ready to be used! 🚀 The file will be deleted in 3 seconds.');
 sleep(3);
-// unlink(__FILE__);
+unlink(__FILE__);
