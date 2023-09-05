@@ -390,7 +390,7 @@ function executeMigrations(): bool|string
 
 function executeValetPreparation(): bool|string
 {
-    global $env, $valet;
+    global $valet;
 
     if (!$valet) {
         return true;
@@ -400,6 +400,8 @@ function executeValetPreparation(): bool|string
         if (($status = executeCommand("valet link $valet")) !== true) {
             return $status;
         }
+
+        $env = environment();
 
         preg_match('/APP_URL=(.*)/', $env, $matches);
 
@@ -436,7 +438,6 @@ function executeCommentsRemoval(): bool|string
         $files = array_merge(filesRecursively(__DIR__ . '/app'), filesRecursively(__DIR__ . '/database'));
 
         foreach ($files as $file) {
-            #$content = preg_replace('/\/\*(.*?)\*\/|\/\/(.*?)(?=\r|\n)/s', '', file_get_contents($file));
             $content = preg_replace('/\/\*(.*?)\*\//s', '', file_get_contents($file));
 
             file_put_contents($file, $content);
