@@ -23,7 +23,7 @@ use Symfony\Component\Process\Process;
 
 /** Default Zone */
 $actions = [
-    'executeEnvironmentPreparation'        => 'Prepare `.env` with Database Credentials',
+    'executeEnvironmentPreparation'        => 'Prepare .env with Database Credentials',
     'executeSeederPreparation'             => 'Prepare DatabaseSeeder',
     'executeAppServiceProviderPreparation' => 'Prepare AppServiceProvider',
     'executeLivewirePreparation'           => 'Install Livewire',
@@ -493,6 +493,6 @@ if (in_array('executePintPreparation', $steps) && in_array('executeLaraStanPrepa
 /** End Extra Steps Zone */
 
 /** Final */
-info('Your project is ready to be used! 🚀 The file will be deleted in 3 seconds.');
+info("Your project is ready to be used! 🚀 Deleting script in 3 seconds...");
 sleep(3);
 unlink(__FILE__);
