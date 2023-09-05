@@ -25,6 +25,10 @@ DB_PASSWORD=
 PINT_PRESET=laravel
 ```
 
+With the exception `PINT_PRESET`, all these settings will be overridden in the project's `.env` file.
+
+---
+
 **You are ready to run the file!** Continue to the below section.
 
 ## Usage
@@ -40,6 +44,8 @@ wget https://aj.dev.br/laravel-ready.php
 ```bash
 php laravel-ready.php
 ```
+
+**The script will be self-destructed after the execution.**
 
 ## Available Options
 
@@ -71,10 +77,10 @@ This option is self-explanatory. The unique observations here is:
 - //     'name' => 'Test User',
 - //     'email' => 'test@example.com',
 - // ]);
-+ // \App\Models\User::factory()->create([
-+ //     'name' => 'Test User',
-+ //     'email' => 'test@example.com',
-+ // ]);
++ \App\Models\User::factory()->create([
++    'name' => 'Test User',
++    'email' => 'test@example.com',
++ ]);
 ```
 
 2. `Prepare AppServiceProvider`:
