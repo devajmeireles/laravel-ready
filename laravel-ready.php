@@ -185,7 +185,7 @@ function executeEnvironmentPreparation(): bool|string
         }
 
         if (isset($configurations['DB_PASSWORD'])) {
-            $content = preg_replace('/^(DB_PASSWORD\s*=\s*).*$/m', 'DB_PASSWORD=' . $configurations['DB_PASSWORD'], $content);
+            $content = preg_replace('/^(DB_PASSWORD\s*=\s*).*$/m', 'DB_PASSWORD=' . $configurations['DB_PASSWORD'] . PHP_EOL, $content);
         }
 
         file_put_contents('.env', $content);
